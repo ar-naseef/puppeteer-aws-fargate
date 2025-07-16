@@ -1,0 +1,27 @@
+{
+  "name": "aws-lambda-puppeteer",
+  "version": "1.0.0",
+  "description": "Scalable Puppeteer-based web scraping system deployed on AWS Fargate",
+  "main": "server.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "puppeteer",
+    "web-scraping",
+    "aws",
+    "fargate",
+    "docker"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "puppeteer": "24.13.0",
+    "express": "^4.18.2"
+  }
+}
