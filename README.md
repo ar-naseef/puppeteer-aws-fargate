@@ -1,216 +1,316 @@
-# Puppeteer Web Scraping System on AWS Fargate
+# Puppeteer Web Scraping API on AWS Fargate
 
-A scalable Puppeteer-based web scraping system that searches Google and scrapes HTML content, deployed using AWS CDK on Fargate.
+A scalable Express-based web scraping API using Puppeteer, deployed on AWS Fargate with multiple scraping endpoints.
 
 ## Project Overview
 
-This project creates a containerized web scraping system that:
+This project creates a containerized web scraping API that:
 
-- Uses Puppeteer v24.13.0 with Node.js 20
-- Searches Google for "ChatGPT"
-- Scrapes the HTML content of search results
-- Logs the HTML content length
-- Runs reliably in headless mode
-- Deploys to AWS Fargate using CDK
+- **Express Web Server** with multiple scraping endpoints
+- **Puppeteer v24.13.0** with Node.js 20 in headless mode
+- **Request routing** based on HTTP method, path, and body
+- **Google Search scraping** with customizable search terms
+- **Custom scraping endpoints** for different use cases
+- **AWS Fargate deployment** with auto-scaling
+- **Production-ready** with health checks and monitoring
 
 ## Project Structure
 
 ```
 project-root/
-├── index.js                          # Main Puppeteer scraping script
-├── package.json                      # Node.js dependencies
-├── Dockerfile                        # Docker configuration
-├── README.md                         # This file
-└── aws/                             # AWS CDK infrastructure
-    ├── bin/app.ts                   # CDK app entry point
+├── src/                               # Application source code
+│   ├── server.js                      # Express web server (main entry)
+│   ├── package.json                   # Node.js dependencies
+│   ├── Dockerfile                     # Docker configuration
+│   └── scripts/                       # Scraping scripts
+│       ├── index.js                   # Script exports
+│       └── google-script.js           # Google scraping logic
+└── aws/                              # AWS CDK infrastructure
+    ├── bin/app.ts                    # CDK app entry point
     ├── lib/puppeteer-fargate-stack.ts # Fargate stack definition
-    ├── cdk.json                     # CDK configuration
-    ├── package.json                 # CDK dependencies
-    └── tsconfig.json                # TypeScript configuration
+    ├── cdk.json                      # CDK configuration
+    ├── package.json                  # CDK dependencies
+    └── tsconfig.json                 # TypeScript configuration
 ```
 
-## Running with Docker
+## API Endpoints
 
-### 1. Build the Docker Image
+The Express server provides multiple endpoints for different scraping needs:
+
+### **Health Check**
 
 ```bash
-docker build -t puppeteer-scraper .
+GET /               # Service status
+GET /health         # Health check endpoint
 ```
 
-### 2. Run the Container
+### **Google Search Scraping**
 
 ```bash
-docker run --rm puppeteer-scraper
+# POST with JSON body
+POST /scrape/google
+Content-Type: application/json
+{
+  "searchTerm": "Node.js tutorials",
+  "options": {"timeout": 30000}
+}
+
+# GET with query parameters
+GET /scrape/google?searchTerm=Docker&debug=true
 ```
 
-### 3. Run with Interactive Mode (to see logs in real-time)
+### **Custom Scraping**
 
 ```bash
-docker run --rm -it puppeteer-scraper
+POST /scrape/custom
+Content-Type: application/json
+{
+  "url": "https://example.com",
+  "customOption": "value"
+}
 ```
 
-### 4. Run with Port Mapping (if you want to expose port 3000)
+### **Batch Processing**
 
 ```bash
+POST /scrape/batch
+Content-Type: application/json
+{
+  "urls": ["https://site1.com", "https://site2.com"]
+}
+```
+
+## Request Details Access
+
+The server logs and provides access to all request details:
+
+```javascript
+// Available in all route handlers
+const method = req.method; // GET, POST, PUT, DELETE
+const path = req.path; // /scrape/google
+const body = req.body; // JSON request body
+const query = req.query; // URL query parameters
+const headers = req.headers; // Request headers
+```
+
+## Running Locally
+
+### **With Docker (Recommended)**
+
+```bash
+# Build the Docker image
+docker build -t puppeteer-scraper ./src
+
+# Run the container
 docker run --rm -p 3000:3000 puppeteer-scraper
+
+# Test the API
+curl http://localhost:3000/
+curl -X POST http://localhost:3000/scrape/google \
+  -H "Content-Type: application/json" \
+  -d '{"searchTerm": "Docker tutorials"}'
 ```
 
-## Expected Output
-
-When you run the container, you should see output like this:
-
-```
-Starting Puppeteer browser...
-Browser launched successfully
-Navigating to Google...
-Google loaded, searching for "ChatGPT"...
-Search submitted, waiting for results...
-Search results loaded, scraping HTML content...
-HTML content scraped successfully!
-HTML content length: [NUMBER] characters
-Waiting 5 seconds...
-Scraping completed successfully!
-Web scraping completed successfully
-Closing browser...
-```
-
-## Optional Docker Commands
-
-### Run in Background
+### **With Node.js**
 
 ```bash
-docker run -d --name puppeteer-container puppeteer-scraper
+cd src
+npm install
+npm start
+
+# Server runs on http://localhost:3000
 ```
 
-### View Logs from Background Container
+## Expected API Response
+
+```json
+{
+  "success": true,
+  "requestDetails": {
+    "method": "POST",
+    "path": "/scrape/google",
+    "body": { "searchTerm": "Docker" },
+    "query": {},
+    "params": {}
+  },
+  "data": {
+    "type": "google_search",
+    "searchTerm": "Docker",
+    "htmlLength": 157230,
+    "scrapedAt": "2024-01-15T10:30:00.000Z",
+    "htmlPreview": "<!DOCTYPE html><html>..."
+  },
+  "timestamp": "2024-01-15T10:30:05.000Z"
+}
+```
+
+## AWS Fargate Deployment
+
+Deploy the Express API as a containerized service on AWS Fargate:
 
 ```bash
-docker logs puppeteer-container
+cd aws
+npm install
+cdk bootstrap
+cdk deploy
 ```
 
-### Stop and Remove Background Container
+**Features:**
 
-```bash
-docker stop puppeteer-container
-docker rm puppeteer-container
-```
+- ✅ **Always available** (no cold starts)
+- ✅ **Auto-scaling** (1-3 tasks based on CPU usage)
+- ✅ **Application Load Balancer** with health checks
+- ✅ **CloudWatch monitoring** and logging
+- ✅ **Uses default VPC** (avoids resource limits)
+- ✅ **0.5 vCPU and 1GB RAM** per task
+- ✅ **Cost:** ~$50/month for continuous operation
 
-## AWS Deployment with CDK
+**CDK Commands:**
 
-### Prerequisites
-
-- AWS CLI configured with appropriate credentials
-- Node.js 18+ installed
-- AWS CDK CLI installed: `npm install -g aws-cdk`
-
-### Deploy to AWS Fargate
-
-1. **Navigate to the AWS directory:**
-
-   ```bash
-   cd aws
-   ```
-
-2. **Install CDK dependencies:**
-
-   ```bash
-   npm install
-   ```
-
-3. **Bootstrap CDK (first time only):**
-
-   ```bash
-   cdk bootstrap
-   ```
-
-4. **Deploy the stack:**
-
-   ```bash
-   cdk deploy
-   ```
-
-5. **View the deployment:**
-   The deployment will output the Application Load Balancer URL where your service is accessible.
-
-### CDK Commands
-
-- **Synthesize CloudFormation template:** `cdk synth`
+- **Deploy:** `cdk deploy`
 - **View differences:** `cdk diff`
-- **Destroy the stack:** `cdk destroy`
+- **Synthesize template:** `cdk synth`
+- **Destroy stack:** `cdk destroy`
 
-## Features
+## Docker Features
 
-### Puppeteer Configuration
+### **Optimized for Headless Operation**
 
-- Headless mode with `headless: 'new'`
-- Optimized Chrome arguments for containerized environments
-- No sandbox mode for Docker compatibility
-- Graceful error handling and browser cleanup
+- ✅ **No display dependencies** (removed Xvfb, X11 libraries)
+- ✅ **Streamlined Chromium** installation
+- ✅ **Always headless** mode for reliability
+- ✅ **ARM64 support** for Apple Silicon
+- ✅ **Non-root user** for security
 
-### Docker Features
+### **Production Ready**
 
-- Based on Node.js 20 official image
-- Includes all Chromium dependencies
-- Non-root user for security
-- Health checks included
-- Optimized for production environments
+- ✅ **Health checks** built-in
+- ✅ **Graceful shutdown** handling
+- ✅ **CloudWatch logging** integration
+- ✅ **Environment-aware** configuration
 
-### AWS Fargate Features
+## Development & Testing
 
-- **Resources:** 512 CPU units (0.5 vCPU) and 1GB RAM
-- **Auto Scaling:** CPU-based scaling from 1 to 3 tasks
-- **Load Balancer:** Application Load Balancer with health checks
-- **Logging:** CloudWatch logs with 1-week retention
-- **Networking:** VPC with 2 AZs and 1 NAT Gateway
-- **Monitoring:** Container Insights enabled
+### **Test Different Endpoints**
 
-## Environment Configuration
+```bash
+# Health check
+curl http://localhost:3000/
 
-### Local Development
+# Google search with POST
+curl -X POST http://localhost:3000/scrape/google \
+  -H "Content-Type: application/json" \
+  -d '{"searchTerm": "Puppeteer tutorials"}'
 
-The Docker container runs the scraping task once and exits. It's designed for batch processing rather than serving HTTP requests.
+# Google search with GET
+curl "http://localhost:3000/scrape/google?searchTerm=CDK&format=json"
 
-### Production (AWS Fargate)
+# Custom scraping
+curl -X POST http://localhost:3000/scrape/custom \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com"}'
 
-- The container is managed by ECS Fargate
-- Accessible via Application Load Balancer
-- Auto-scales based on CPU utilization
-- Logs are sent to CloudWatch
+# Test different HTTP methods
+curl -X PUT http://localhost:3000/scrape/google \
+  -H "Content-Type: application/json" \
+  -d '{"searchTerm": "PUT request test"}'
+```
+
+### **View Request Logs**
+
+The server logs all request details for debugging:
+
+```
+=== REQUEST DETAILS ===
+Method: POST
+Path: /scrape/google
+Body: {"searchTerm": "Docker"}
+Query params: {}
+=======================
+```
+
+## Cost Information
+
+**Monthly Operating Cost:** ~$50 for continuous operation
+
+- **Fargate Compute:** ~$18/month (0.5 vCPU + 1GB RAM)
+- **Application Load Balancer:** ~$22/month (fixed + usage)
+- **CloudWatch Logs:** ~$2-5/month (depending on log volume)
+- **Data Transfer:** ~$1-10/month (depending on traffic)
 
 ## Troubleshooting
 
-### Docker Issues
+### **Docker Issues**
 
-- If Chrome fails to start, ensure you're running with `--no-sandbox` flag
-- For memory issues, increase Docker's memory allocation
-- Check that all Chromium dependencies are installed in the container
+- **Port conflict:** Stop existing containers with `docker ps` and `docker stop <container-id>`
+- **Build failures:** Check that `package-lock.json` is updated with `npm install`
+- **Memory issues:** Increase Docker memory allocation in Docker Desktop
 
-### CDK Deployment Issues
+### **AWS Deployment Issues**
 
-- Ensure AWS credentials are configured: `aws configure`
-- Check that your account has sufficient permissions for ECS, EC2, and Load Balancer resources
-- Verify the region supports Fargate: most major regions do
+- **VPC limits:** Stack now uses default VPC (no new VPC creation)
+- **Resource limits:** Check AWS service quotas in your region
+- **Permissions:** Ensure IAM user has ECS, EC2, and LoadBalancer permissions
 
-### Puppeteer Issues
+### **API Issues**
 
-- If Google blocks requests, the script includes user agent spoofing
-- Cookie acceptance is handled automatically
-- Timeouts are configured for reliable operation
+- **404 errors:** Check endpoint spelling and HTTP method
+- **Request parsing:** Ensure `Content-Type: application/json` header
+- **Timeout errors:** Puppeteer operations can take 10-30 seconds
+
+## Extending the API
+
+### **Add New Scraping Endpoints**
+
+```javascript
+// In server.js
+app.all("/scrape/linkedin/*", async (req, res) => {
+  const result = await linkedinScraper(req.body, {
+    method: req.method,
+    path: req.path,
+    query: req.query,
+  });
+  res.json({ success: true, data: result });
+});
+```
+
+### **Route Based on Request Details**
+
+```javascript
+// Route different scripts based on method/path/body
+if (req.method === "POST" && req.path.includes("/scrape/advanced")) {
+  result = await advancedScraper(req.body);
+} else if (req.query.format === "pdf") {
+  result = await pdfScraper(req.body);
+}
+```
 
 ## Security Considerations
 
-- Container runs as non-root user
-- VPC isolates the Fargate tasks
-- No sensitive data is logged
-- Chrome runs in sandboxed mode where possible
-
-## Cost Optimization
-
-- Single NAT Gateway to reduce costs
-- Log retention set to 1 week
-- Auto-scaling prevents over-provisioning
-- Container stops after task completion
+- ✅ **Non-root container** user
+- ✅ **No sensitive data** in logs
+- ✅ **Headless-only** operation
+- ✅ **VPC isolation** (Fargate)
+- ✅ **IAM roles** for AWS resources
 
 ## License
 
 MIT License - see package.json for details.
+
+---
+
+## Quick Start Commands
+
+```bash
+# Local development
+docker build -t puppeteer-scraper ./src && docker run --rm -p 3000:3000 puppeteer-scraper
+
+# Test API
+curl -X POST http://localhost:3000/scrape/google -H "Content-Type: application/json" -d '{"searchTerm": "test"}'
+
+# Deploy to AWS
+cd aws && cdk deploy
+
+# Clean up
+cd aws && cdk destroy
+```
