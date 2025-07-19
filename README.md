@@ -54,30 +54,6 @@ Content-Type: application/json
   "searchTerm": "Node.js tutorials",
   "options": {"timeout": 30000}
 }
-
-# GET with query parameters
-GET /scrape/google?searchTerm=Docker&debug=true
-```
-
-### **Custom Scraping**
-
-```bash
-POST /scrape/custom
-Content-Type: application/json
-{
-  "url": "https://example.com",
-  "customOption": "value"
-}
-```
-
-### **Batch Processing**
-
-```bash
-POST /scrape/batch
-Content-Type: application/json
-{
-  "urls": ["https://site1.com", "https://site2.com"]
-}
 ```
 
 ## Request Details Access
@@ -172,23 +148,6 @@ cdk deploy
 - **Synthesize template:** `cdk synth`
 - **Destroy stack:** `cdk destroy`
 
-## Docker Features
-
-### **Optimized for Headless Operation**
-
-- ✅ **No display dependencies** (removed Xvfb, X11 libraries)
-- ✅ **Streamlined Chromium** installation
-- ✅ **Always headless** mode for reliability
-- ✅ **ARM64 support** for Apple Silicon
-- ✅ **Non-root user** for security
-
-### **Production Ready**
-
-- ✅ **Health checks** built-in
-- ✅ **Graceful shutdown** handling
-- ✅ **CloudWatch logging** integration
-- ✅ **Environment-aware** configuration
-
 ## Development & Testing
 
 ### **Test Different Endpoints**
@@ -202,31 +161,10 @@ curl -X POST http://localhost:3000/scrape/google \
   -H "Content-Type: application/json" \
   -d '{"searchTerm": "Puppeteer tutorials"}'
 
-# Google search with GET
-curl "http://localhost:3000/scrape/google?searchTerm=CDK&format=json"
-
-# Custom scraping
-curl -X POST http://localhost:3000/scrape/custom \
-  -H "Content-Type: application/json" \
-  -d '{"url": "https://example.com"}'
-
-# Test different HTTP methods
-curl -X PUT http://localhost:3000/scrape/google \
-  -H "Content-Type: application/json" \
-  -d '{"searchTerm": "PUT request test"}'
-```
-
 ### **View Request Logs**
 
 The server logs all request details for debugging:
 
-```
-=== REQUEST DETAILS ===
-Method: POST
-Path: /scrape/google
-Body: {"searchTerm": "Docker"}
-Query params: {}
-=======================
 ```
 
 ## Cost Information
