@@ -98,13 +98,11 @@ app.all("/scrape/*", async (req, res) => {
     if (path.includes("/scrape/google")) {
       // Google scraping
       result = await scrapeGoogleSearch(body, page);
-    } else if (path.includes("/scrape/custom")) {
-      // Custom scraping - you can add different logic here
-      result = { message: "Custom scraping not implemented" };
-    } else if (path.includes("/scrape/batch")) {
-      // Batch processing
-      const urls = body.urls || [];
-      result = { message: "Batch processing not implemented" };
+    } else {
+      return res.status(404).json({
+        success: false,
+        error: "Route not found",
+      });
     }
 
     // Return successful response with request details
